@@ -123,8 +123,8 @@ func (s *Server) registerRoutes() {
 			sC.GET("/rev/:revision", gist.GistIndex)
 			sC.GET("/revisions", gist.Revisions)
 			sC.GET("/archive/:revision", gist.DownloadZip)
-			sC.POST("/visibility", gist.EditVisibility, logged, writePermission)
-			sC.POST("/delete", gist.DeleteGist, logged, writePermission)
+			sC.POST("/visibility", gist.EditVisibility, logged, ownerPermission)
+			sC.POST("/delete", gist.DeleteGist, logged, ownerPermission)
 			sC.GET("/raw/:revision/:file", gist.RawFile)
 			sC.GET("/download/:revision/:file", gist.DownloadFile)
 			sC.GET("/edit", gist.Edit, logged, writePermission)
@@ -134,6 +134,10 @@ func (s *Server) registerRoutes() {
 			sC.POST("/fork", gist.Fork, logged)
 			sC.GET("/forks", gist.Forks, checkRequireLogin)
 			sC.PUT("/checkbox", gist.Checkbox, logged, writePermission)
+			sC.GET("/collaborators", gist.Collaborators, logged, ownerPermission)
+			sC.POST("/collaborators", gist.AddCollaborator, logged, ownerPermission)
+			sC.POST("/collaborators/remove", gist.RemoveCollaborator, logged, ownerPermission)
+			sC.GET("/collaborators/search", gist.SearchUsersApi, logged, ownerPermission)
 		}
 	}
 
