@@ -135,6 +135,8 @@ func (s *Server) registerRoutes() {
 			sC.GET("/forks", gist.Forks, checkRequireLogin)
 			sC.PUT("/checkbox", gist.Checkbox, logged, writePermission)
 			sC.POST("/pin", gist.TogglePin, logged, adminPermission)
+			sC.POST("/comments", gist.CreateComment, logged)
+			sC.POST("/comments/:id/delete", gist.DeleteComment, logged)
 		}
 	}
 

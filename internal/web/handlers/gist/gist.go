@@ -37,10 +37,18 @@ func GistIndex(ctx *context.Context) error {
 
 	renderedFiles := render.RenderFiles(files)
 
+	// Load comments for this gist, scoped to revision if applicable
+	comments, err := db.GetCommentsByGist(gist.ID, revision)
+	if err != nil {
+		return ctx.ErrorRes(500, "Error fetching comments", err)
+	}
+	renderedComments := RenderComments(comments)
+
 	ctx.SetData("page", "code")
 	ctx.SetData("commit", revision)
 	ctx.SetData("files", renderedFiles)
 	ctx.SetData("revision", revision)
+	ctx.SetData("comments", renderedComments)
 	ctx.SetData("htmlTitle", gist.Title)
 	return ctx.Html("gist.html")
 }
