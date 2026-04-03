@@ -331,6 +331,21 @@ admin.invitations.uses: Uses
 admin.invitations.expired: Expired
 admin.invitations.delete_confirm: Do you want to delete this invitation ?
 
+admin.create-users: Create users
+admin.create-users.title: Create Users
+admin.create-users.single: Create a single user
+admin.create-users.single.help: Create a new user account with a username, email, and password.
+admin.create-users.username: Username
+admin.create-users.email: Email
+admin.create-users.password: Password
+admin.create-users.create: Create user
+admin.create-users.bulk: Bulk create users
+admin.create-users.bulk.help: "Paste CSV data to create multiple users at once. One user per line: username,email,password"
+admin.create-users.bulk.placeholder: "username1,user1@example.com,password123\nusername2,user2@example.com,password456"
+admin.create-users.bulk.create: Create users
+admin.create-users.bulk.results: "Bulk creation results: %s created, %s failed"
+
+flash.admin.user-created: User %s has been created
 flash.admin.user-deleted: User has been deleted
 flash.admin.gist-deleted: Gist has been deleted
 flash.admin.invitation-created: Invitation has been created
