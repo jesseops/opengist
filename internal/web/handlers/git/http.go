@@ -131,24 +131,37 @@ func GitHttp(ctx *context.Context) error {
 			return ctx.PlainText(404, "Check your credentials or make sure you have access to the Gist")
 		}
 
-		var userToCheckPermissions string
-		// if the user is trying to clone/pull a non-private gist while unauthenticated access is not allowed,
-		// check if the user has a valid account
+		// Authenticate as the provided user
 		if gist.Private != db.PrivateVisibility {
+			// Non-private gist: just check the user has a valid account
 			log.Debug().Str("authUsername", authUsername).Msg("Pulling non-private gist with authenticated access")
-			userToCheckPermissions = authUsername
-		} else { // else just check the password against the gist owner
-			log.Debug().Str("authUsername", authUsername).Str("gistOwner", gist.User.Username).Msg("Pulling private gist")
-			userToCheckPermissions = gist.User.Username
-		}
-
-		if _, err = auth.TryAuthentication(userToCheckPermissions, authPassword); err != nil {
-			var authErr auth.AuthError
-			if errors.As(err, &authErr) {
-				log.Warn().Msg("Invalid HTTP authentication attempt from " + ctx.RealIP())
-				return ctx.PlainText(404, "Check your credentials or make sure you have access to the Gist")
+			if _, err = auth.TryAuthentication(authUsername, authPassword); err != nil {
+				var authErr auth.AuthError
+				if errors.As(err, &authErr) {
+					log.Warn().Msg("Invalid HTTP authentication attempt from " + ctx.RealIP())
+					return ctx.PlainText(404, "Check your credentials or make sure you have access to the Gist")
+				}
+				return ctx.ErrorRes(500, "Authentication system error", nil)
 			}
-			return ctx.ErrorRes(500, "Authentication system error", nil)
+		} else {
+			// Private gist: authenticate the user, then check if they are owner or collaborator
+			log.Debug().Str("authUsername", authUsername).Str("gistOwner", gist.User.Username).Msg("Pulling private gist")
+			pullUser, err := auth.TryAuthentication(authUsername, authPassword)
+			if err != nil {
+				var authErr auth.AuthError
+				if errors.As(err, &authErr) {
+					log.Warn().Msg("Invalid HTTP authentication attempt from " + ctx.RealIP())
+					return ctx.PlainText(404, "Check your credentials or make sure you have access to the Gist")
+				}
+				return ctx.ErrorRes(500, "Authentication system error", nil)
+			}
+			// Check if the authenticated user is the owner or a collaborator
+			if pullUser.ID != gist.UserID {
+				isCollab, _ := db.IsCollaborator(gist.ID, pullUser.ID)
+				if !isCollab {
+					return ctx.PlainText(404, "Check your credentials or make sure you have access to the Gist")
+				}
+			}
 		}
 		log.Debug().Str("authUsername", authUsername).Msg("Pulling gist")
 
@@ -157,10 +170,13 @@ func GitHttp(ctx *context.Context) error {
 
 	if isPush {
 		log.Debug().Msg("Detected git push operation")
-		// if gist exists, check if the credentials are valid and if the user is the gist owner
+		// if gist exists, check if the credentials are valid and if the user is the gist owner or a collaborator
 		if gistExists {
 			log.Debug().Str("authUsername", authUsername).Str("gistOwner", gist.User.Username).Msg("Pushing to existing gist")
-			if _, err = auth.TryAuthentication(gist.User.Username, authPassword); err != nil {
+
+			// First try authenticating as the provided user
+			pushUser, err := auth.TryAuthentication(authUsername, authPassword)
+			if err != nil {
 				var authErr auth.AuthError
 				if errors.As(err, &authErr) {
 					log.Warn().Msg("Invalid HTTP authentication attempt from " + ctx.RealIP())
@@ -168,8 +184,14 @@ func GitHttp(ctx *context.Context) error {
 				}
 				return ctx.ErrorRes(500, "Authentication system error", nil)
 			}
-			log.Debug().Str("authUsername", authUsername).Msg("Pushing gist")
 
+			// Check if the authenticated user is the owner or a collaborator
+			if !gist.CanWrite(pushUser) {
+				log.Debug().Str("authUsername", authUsername).Msg("User is not owner or collaborator")
+				return ctx.PlainText(404, "Check your credentials or make sure you have access to the Gist")
+			}
+
+			log.Debug().Str("authUsername", authUsername).Msg("Pushing gist")
 			return route.handler(ctx)
 		} else { // if the gist does not exist, check if the user has a valid account on opengist to push a gist and create it
 			log.Debug().Str("authUsername", authUsername).Msg("Creating new gist by pushing")

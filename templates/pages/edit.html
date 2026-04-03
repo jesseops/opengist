@@ -8,6 +8,7 @@
                 </h1>
             </div>
             <div class="lg:flex-row flex py-2 lg:py-0 lg:ml-auto">
+                {{ if .isOwner }}
                 <form id="visibility" class="flex items-center whitespace-nowrap" method="post" action="{{ $.c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}/visibility">
                     {{ .csrfHtml }}
                     <div class="ml-auto inline-flex ">
@@ -37,6 +38,7 @@
                         {{ .locale.Tr "gist.edit.delete" }}
                     </button>
                 </form>
+                {{ end }}
             </div>
         </div>
     </header>
