@@ -403,6 +403,22 @@ func (gist *Gist) GetForks(currentUserId uint, offset int) ([]*Gist, error) {
 }
 
 func (gist *Gist) CanWrite(user *User) bool {
+	if user == nil {
+		return false
+	}
+	if gist.UserID == user.ID {
+		return true
+	}
+	// Check if user is a collaborator
+	isCollab, err := IsCollaborator(gist.ID, user.ID)
+	if err != nil {
+		return false
+	}
+	return isCollab
+}
+
+// IsOwner returns true only if the user is the gist owner (not collaborators).
+func (gist *Gist) IsOwner(user *User) bool {
 	return user != nil && gist.UserID == user.ID
 }
 
