@@ -1,6 +1,79 @@
 import {EditorView, gutter, keymap, lineNumbers} from "@codemirror/view";
 import {Compartment, EditorState, Facet, Line, SelectionRange} from "@codemirror/state";
 import {defaultKeymap, indentLess} from "@codemirror/commands";
+import {languages} from "@codemirror/language-data";
+import {LanguageDescription, syntaxHighlighting, defaultHighlightStyle} from "@codemirror/language";
+
+// Curated list of popular languages to show in the dropdown.
+// These names must match LanguageDescription.name from @codemirror/language-data.
+const POPULAR_LANGUAGES = [
+    "Plain Text",
+    "C",
+    "C++",
+    "CSS",
+    "Go",
+    "HTML",
+    "Java",
+    "JavaScript",
+    "JSON",
+    "Markdown",
+    "PHP",
+    "Python",
+    "Ruby",
+    "Rust",
+    "Shell",
+    "SQL",
+    "TypeScript",
+    "XML",
+    "YAML",
+];
+
+// Find a LanguageDescription by name from the full language-data list.
+function findLang(name: string): LanguageDescription | undefined {
+    return languages.find(l => l.name === name);
+}
+
+// Given a filename, detect the best matching language from the curated list.
+function detectLanguageFromFilename(filename: string): string {
+    if (!filename || !filename.includes(".")) return "Plain Text";
+    // LanguageDescription.matchFilename checks extensions and filenames
+    const match = LanguageDescription.matchFilename(languages, filename);
+    if (match && POPULAR_LANGUAGES.includes(match.name)) {
+        return match.name;
+    }
+    if (match) {
+        // Still use the match even if not in popular list - it will be shown in the dropdown
+        return match.name;
+    }
+    return "Plain Text";
+}
+
+// Apply a language to a CodeMirror editor via its language compartment.
+async function applyLanguage(editor: EditorView, langCompartment: Compartment, langName: string) {
+    if (langName === "Plain Text") {
+        editor.dispatch({effects: langCompartment.reconfigure([])});
+        return;
+    }
+    const desc = findLang(langName);
+    if (!desc) {
+        editor.dispatch({effects: langCompartment.reconfigure([])});
+        return;
+    }
+    const lang = await desc.load();
+    editor.dispatch({effects: langCompartment.reconfigure(lang)});
+}
+
+// Populate a language <select> element with the curated language options.
+function populateLanguageSelect(select: HTMLSelectElement) {
+    // Clear existing options (if any from template clone)
+    select.innerHTML = "";
+    POPULAR_LANGUAGES.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+    });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     EditorView.theme({}, {dark: true});
@@ -21,6 +94,9 @@ document.addEventListener("DOMContentLoaded", () => {
         indentType = new Compartment();
 
     const newEditor = (dom: HTMLElement, value: string = ""): EditorView => {
+        // Each editor gets its own language compartment so languages can differ per file
+        let langCompartment = new Compartment();
+
         let editor = new EditorView({
             doc: value,
             parent: dom,
@@ -34,12 +110,30 @@ document.addEventListener("DOMContentLoaded", () => {
                 indentSize.of(EditorState.tabSize.of(2)),
                 wrapMode.of([]),
                 indentType.of(txtFacet.of("space")),
+                syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
+                langCompartment.of([]),
             ],
         });
 
         let mdpreview = dom.querySelector(".md-preview") as HTMLElement;
 
         let formfilename = dom.querySelector<HTMLInputElement>(".form-filename");
+
+        // Set up language selector dropdown
+        let langSelect = dom.querySelector<HTMLSelectElement>(".editor-language");
+        if (langSelect) {
+            populateLanguageSelect(langSelect);
+
+            // Detect language from initial filename
+            let initialLang = detectLanguageFromFilename(formfilename!.value);
+            langSelect.value = initialLang;
+            applyLanguage(editor, langCompartment, initialLang);
+
+            // When user manually picks a language
+            langSelect.onchange = () => {
+                applyLanguage(editor, langCompartment, langSelect!.value);
+            };
+        }
 
         // check if file ends with .md on pageload
         if (formfilename!.value.endsWith(".md")) {
@@ -55,6 +149,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 mdpreview!.classList.remove("hidden");
             } else {
                 mdpreview!.classList.add("hidden");
+            }
+
+            // Auto-detect language from filename extension
+            if (langSelect) {
+                let detectedLang = detectLanguageFromFilename(filename);
+                // Add the language to the dropdown if it's not in the curated list
+                if (!Array.from(langSelect.options).some(o => o.value === detectedLang)) {
+                    let opt = document.createElement("option");
+                    opt.value = detectedLang;
+                    opt.textContent = detectedLang;
+                    langSelect.appendChild(opt);
+                }
+                langSelect.value = detectedLang;
+                applyLanguage(editor, langCompartment, detectedLang);
             }
         };
 
@@ -107,10 +215,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
         dom.addEventListener("drop", (e) => {
             e.preventDefault(); // prevent the browser from opening the dropped file
+            let droppedFilename = e.dataTransfer.files[0].name;
             (e.target as HTMLInputElement)
                 .closest(".editor")
                 .querySelector<HTMLInputElement>("input.form-filename")!.value =
-                e.dataTransfer.files[0].name;
+                droppedFilename;
+
+            // Auto-detect language when a file is dropped
+            if (langSelect) {
+                let detectedLang = detectLanguageFromFilename(droppedFilename);
+                if (!Array.from(langSelect.options).some(o => o.value === detectedLang)) {
+                    let opt = document.createElement("option");
+                    opt.value = detectedLang;
+                    opt.textContent = detectedLang;
+                    langSelect.appendChild(opt);
+                }
+                langSelect.value = detectedLang;
+                applyLanguage(editor, langCompartment, detectedLang);
+            }
+
+            // Show/hide markdown preview for dropped .md files
+            if (droppedFilename.endsWith(".md")) {
+                mdpreview!.classList.remove("hidden");
+            } else {
+                mdpreview!.classList.add("hidden");
+            }
         });
 
         // remove editor on delete
