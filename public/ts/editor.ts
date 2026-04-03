@@ -2,7 +2,80 @@ import {EditorView, gutter, keymap, lineNumbers} from "@codemirror/view";
 import {Compartment, EditorState, Facet, Line, SelectionRange} from "@codemirror/state";
 import {defaultKeymap, indentLess} from "@codemirror/commands";
 import {languages} from "@codemirror/language-data";
-import {LanguageDescription, syntaxHighlighting, defaultHighlightStyle} from "@codemirror/language";
+import {LanguageDescription, HighlightStyle, syntaxHighlighting} from "@codemirror/language";
+import {tags as t} from "@lezer/highlight";
+
+// Solarized color palette
+const sol = {
+    base03: "#002b36", base02: "#073642", base01: "#586e75", base00: "#657b83",
+    base0: "#839496", base1: "#93a1a1", base2: "#eee8d5", base3: "#fdf6e3",
+    yellow: "#b58900", orange: "#cb4b16", red: "#dc322f", magenta: "#d33682",
+    violet: "#6c71c4", blue: "#268bd2", cyan: "#2aa198", green: "#859900",
+};
+
+const solarizedDarkHighlight = HighlightStyle.define([
+    {tag: t.keyword, color: sol.green},
+    {tag: [t.name, t.deleted, t.character, t.macroName], color: sol.base1},
+    {tag: [t.function(t.variableName), t.labelName], color: sol.blue},
+    {tag: [t.color, t.constant(t.name), t.standard(t.name)], color: sol.yellow},
+    {tag: [t.definition(t.name), t.separator], color: sol.base1},
+    {tag: [t.typeName, t.className, t.number, t.changed, t.annotation, t.modifier, t.self, t.namespace], color: sol.yellow},
+    {tag: [t.operator, t.operatorKeyword, t.url, t.escape, t.regexp, t.special(t.string)], color: sol.orange},
+    {tag: [t.meta, t.comment], color: sol.base01},
+    {tag: t.strong, fontWeight: "bold"},
+    {tag: t.emphasis, fontStyle: "italic"},
+    {tag: t.strikethrough, textDecoration: "line-through"},
+    {tag: t.link, color: sol.base1, textDecoration: "underline"},
+    {tag: t.heading, fontWeight: "bold", color: sol.yellow},
+    {tag: [t.atom, t.bool, t.special(t.variableName)], color: sol.magenta},
+    {tag: [t.processingInstruction, t.string, t.inserted], color: sol.cyan},
+    {tag: t.invalid, color: sol.red},
+]);
+
+const solarizedLightHighlight = HighlightStyle.define([
+    {tag: t.keyword, color: sol.green},
+    {tag: [t.name, t.deleted, t.character, t.macroName], color: sol.base00},
+    {tag: [t.function(t.variableName), t.labelName], color: sol.blue},
+    {tag: [t.color, t.constant(t.name), t.standard(t.name)], color: sol.yellow},
+    {tag: [t.definition(t.name), t.separator], color: sol.base00},
+    {tag: [t.typeName, t.className, t.number, t.changed, t.annotation, t.modifier, t.self, t.namespace], color: sol.yellow},
+    {tag: [t.operator, t.operatorKeyword, t.url, t.escape, t.regexp, t.special(t.string)], color: sol.orange},
+    {tag: [t.meta, t.comment], color: sol.base1},
+    {tag: t.strong, fontWeight: "bold"},
+    {tag: t.emphasis, fontStyle: "italic"},
+    {tag: t.strikethrough, textDecoration: "line-through"},
+    {tag: t.link, color: sol.base00, textDecoration: "underline"},
+    {tag: t.heading, fontWeight: "bold", color: sol.yellow},
+    {tag: [t.atom, t.bool, t.special(t.variableName)], color: sol.magenta},
+    {tag: [t.processingInstruction, t.string, t.inserted], color: sol.cyan},
+    {tag: t.invalid, color: sol.red},
+]);
+
+const solarizedDark = [
+    EditorView.theme({
+        "&": {backgroundColor: sol.base03, color: sol.base0},
+        ".cm-content": {caretColor: sol.base0},
+        ".cm-cursor, .cm-dropCursor": {borderLeftColor: sol.base0},
+        "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {backgroundColor: sol.base02},
+        ".cm-activeLine": {backgroundColor: sol.base02 + "80"},
+        ".cm-gutters": {backgroundColor: sol.base03, color: sol.base01, borderRight: "1px solid " + sol.base02},
+        ".cm-activeLineGutter": {backgroundColor: sol.base02 + "80"},
+    }, {dark: true}),
+    syntaxHighlighting(solarizedDarkHighlight),
+];
+
+const solarizedLight = [
+    EditorView.theme({
+        "&": {backgroundColor: sol.base3, color: sol.base00},
+        ".cm-content": {caretColor: sol.base00},
+        ".cm-cursor, .cm-dropCursor": {borderLeftColor: sol.base00},
+        "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {backgroundColor: sol.base2},
+        ".cm-activeLine": {backgroundColor: sol.base2 + "80"},
+        ".cm-gutters": {backgroundColor: sol.base3, color: sol.base1, borderRight: "1px solid " + sol.base2},
+        ".cm-activeLineGutter": {backgroundColor: sol.base2 + "80"},
+    }, {dark: false}),
+    syntaxHighlighting(solarizedLightHighlight),
+];
 
 // Curated list of popular languages to show in the dropdown.
 // These names must match LanguageDescription.name from @codemirror/language-data.
@@ -75,9 +148,11 @@ function populateLanguageSelect(select: HTMLSelectElement) {
     });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    EditorView.theme({}, {dark: true});
+function isDarkMode(): boolean {
+    return document.documentElement.classList.contains("dark");
+}
 
+document.addEventListener("DOMContentLoaded", () => {
     let editorsjs: EditorView[] = [];
     let editorsParentdom = document.getElementById("editors")!;
     let allEditorsdom = document.querySelectorAll("#editors > .editor");
@@ -91,7 +166,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let indentSize = new Compartment(),
         wrapMode = new Compartment(),
-        indentType = new Compartment();
+        indentType = new Compartment(),
+        themeConfig = new Compartment();
+
+    // Watch for dark mode changes and update all editors
+    const observer = new MutationObserver(() => {
+        const theme = isDarkMode() ? solarizedDark : solarizedLight;
+        editorsjs.forEach(editor => {
+            editor.dispatch({effects: themeConfig.reconfigure(theme)});
+        });
+    });
+    observer.observe(document.documentElement, {attributes: true, attributeFilter: ["class"]});
 
     const newEditor = (dom: HTMLElement, value: string = ""): EditorView => {
         // Each editor gets its own language compartment so languages can differ per file
@@ -110,7 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 indentSize.of(EditorState.tabSize.of(2)),
                 wrapMode.of([]),
                 indentType.of(txtFacet.of("space")),
-                syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
+                themeConfig.of(isDarkMode() ? solarizedDark : solarizedLight),
                 langCompartment.of([]),
             ],
         });
