@@ -1,6 +1,7 @@
 package gist
 
 import (
+	"regexp"
 	"strconv"
 	"time"
 
@@ -8,6 +9,8 @@ import (
 	"github.com/thomiceli/opengist/internal/render"
 	"github.com/thomiceli/opengist/internal/web/context"
 )
+
+var validRevisionRe = regexp.MustCompile(`^[0-9a-f]{1,40}$`)
 
 func CreateComment(ctx *context.Context) error {
 	gist := ctx.GetData("gist").(*db.Gist)
@@ -30,6 +33,10 @@ func CreateComment(ctx *context.Context) error {
 
 	revision := ctx.FormValue("revision")
 	if revision == "HEAD" {
+		revision = ""
+	}
+	// Validate revision is empty or a valid hex hash
+	if revision != "" && !validRevisionRe.MatchString(revision) {
 		revision = ""
 	}
 
@@ -71,6 +78,11 @@ func DeleteComment(ctx *context.Context) error {
 	comment, err := db.GetCommentByID(uint(commentID))
 	if err != nil {
 		return ctx.ErrorRes(404, "Comment not found", err)
+	}
+
+	// Verify the comment belongs to this gist
+	if comment.GistID != gist.ID {
+		return ctx.ErrorRes(404, "Comment not found", nil)
 	}
 
 	// Only comment author or admin can delete
