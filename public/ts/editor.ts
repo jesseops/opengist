@@ -2,7 +2,7 @@ import {EditorView, gutter, keymap, lineNumbers} from "@codemirror/view";
 import {Compartment, EditorState, Facet, Line, SelectionRange} from "@codemirror/state";
 import {defaultKeymap, indentLess} from "@codemirror/commands";
 import {languages} from "@codemirror/language-data";
-import {LanguageDescription} from "@codemirror/language";
+import {LanguageDescription, syntaxHighlighting, defaultHighlightStyle} from "@codemirror/language";
 
 // Curated list of popular languages to show in the dropdown.
 // These names must match LanguageDescription.name from @codemirror/language-data.
@@ -110,6 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 indentSize.of(EditorState.tabSize.of(2)),
                 wrapMode.of([]),
                 indentType.of(txtFacet.of("space")),
+                syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
                 langCompartment.of([]),
             ],
         });
