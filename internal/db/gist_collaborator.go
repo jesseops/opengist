@@ -1,9 +1,10 @@
 package db
 
 type GistCollaborator struct {
-	GistID uint `gorm:"primaryKey"`
-	UserID uint `gorm:"primaryKey"`
-	User   User
+	GistID uint `gorm:"primaryKey;index"`
+	UserID uint `gorm:"primaryKey;index"`
+	Gist   Gist `gorm:"constraint:OnDelete:CASCADE"`
+	User   User `gorm:"constraint:OnDelete:CASCADE"`
 }
 
 // GetCollaboratorsForGist returns all collaborators for a given gist.
@@ -40,7 +41,7 @@ func RemoveCollaborator(gistID uint, userID uint) error {
 // SearchUsers searches for users by username prefix, excluding a given user ID.
 func SearchUsers(query string, excludeUserID uint, limit int) ([]*User, error) {
 	var users []*User
-	err := db.Where("username_normalized LIKE ? AND id != ?", "%"+query+"%", excludeUserID).
+	err := db.Where("username_normalized LIKE ? AND id != ?", query+"%", excludeUserID).
 		Limit(limit).
 		Find(&users).Error
 	return users, err

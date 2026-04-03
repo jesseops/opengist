@@ -78,31 +78,14 @@ func runGitCommand(ch ssh.Channel, gitCmd string, key string, ip string) error {
 				return errors.New("gist not found")
 			}
 		} else {
-			// For pull: existing behavior
-			var userToCheckPermissions *db.User
-			if gist.Private != db.PrivateVisibility {
-				userToCheckPermissions, _ = db.GetUserFromSSHKey(key)
-			} else {
-				// For private gists, check if the SSH key user is the owner or a collaborator
-				sshUser, _ := db.GetUserFromSSHKey(key)
-				if sshUser != nil {
-					isCollab, _ := db.IsCollaborator(gist.ID, sshUser.ID)
-					if sshUser.ID == gist.UserID || isCollab {
-						userToCheckPermissions = sshUser
-					} else {
-						userToCheckPermissions = &gist.User
-					}
-				} else {
-					userToCheckPermissions = &gist.User
-				}
-			}
-
-			if userToCheckPermissions == nil {
+			// For pull: authenticate the SSH key user
+			sshUser, _ := db.GetUserFromSSHKey(key)
+			if sshUser == nil {
 				log.Warn().Msg("Invalid SSH authentication attempt from " + ip)
 				return errors.New("gist not found")
 			}
 
-			pubKey, err := db.SSHKeyExistsForUser(key, userToCheckPermissions.ID)
+			pubKey, err := db.SSHKeyExistsForUser(key, sshUser.ID)
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					log.Warn().Msg("Invalid SSH authentication attempt from " + ip)
@@ -112,6 +95,16 @@ func runGitCommand(ch ssh.Channel, gitCmd string, key string, ip string) error {
 				return errors.New("internal server error")
 			}
 			_ = db.SSHKeyLastUsedNow(pubKey.Content)
+
+			// For private gists, verify the user is the owner or a collaborator
+			if gist.Private == db.PrivateVisibility {
+				if sshUser.ID != gist.UserID {
+					isCollab, _ := db.IsCollaborator(gist.ID, sshUser.ID)
+					if !isCollab {
+						return errors.New("gist not found")
+					}
+				}
+			}
 		}
 	}
 
