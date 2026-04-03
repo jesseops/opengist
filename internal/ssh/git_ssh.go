@@ -55,23 +55,64 @@ func runGitCommand(ch ssh.Channel, gitCmd string, key string, ip string) error {
 		gist.ID == 0 ||
 		!allowUnauthenticated {
 
-		var userToCheckPermissions *db.User
-		if gist.Private != db.PrivateVisibility && verb == "upload-pack" {
-			userToCheckPermissions, _ = db.GetUserFromSSHKey(key)
-		} else {
-			userToCheckPermissions = &gist.User
-		}
-
-		pubKey, err := db.SSHKeyExistsForUser(key, userToCheckPermissions.ID)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+		if verb == "receive-pack" {
+			// For push: authenticate the SSH key user, then check if they can write
+			sshUser, _ := db.GetUserFromSSHKey(key)
+			if sshUser == nil {
 				log.Warn().Msg("Invalid SSH authentication attempt from " + ip)
 				return errors.New("gist not found")
 			}
-			errorSsh("Failed to get user by SSH key id", err)
-			return errors.New("internal server error")
+			pubKey, err := db.SSHKeyExistsForUser(key, sshUser.ID)
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					log.Warn().Msg("Invalid SSH authentication attempt from " + ip)
+					return errors.New("gist not found")
+				}
+				errorSsh("Failed to get user by SSH key id", err)
+				return errors.New("internal server error")
+			}
+			_ = db.SSHKeyLastUsedNow(pubKey.Content)
+
+			// Check if the user is the owner or a collaborator
+			if !gist.CanWrite(sshUser) {
+				return errors.New("gist not found")
+			}
+		} else {
+			// For pull: existing behavior
+			var userToCheckPermissions *db.User
+			if gist.Private != db.PrivateVisibility {
+				userToCheckPermissions, _ = db.GetUserFromSSHKey(key)
+			} else {
+				// For private gists, check if the SSH key user is the owner or a collaborator
+				sshUser, _ := db.GetUserFromSSHKey(key)
+				if sshUser != nil {
+					isCollab, _ := db.IsCollaborator(gist.ID, sshUser.ID)
+					if sshUser.ID == gist.UserID || isCollab {
+						userToCheckPermissions = sshUser
+					} else {
+						userToCheckPermissions = &gist.User
+					}
+				} else {
+					userToCheckPermissions = &gist.User
+				}
+			}
+
+			if userToCheckPermissions == nil {
+				log.Warn().Msg("Invalid SSH authentication attempt from " + ip)
+				return errors.New("gist not found")
+			}
+
+			pubKey, err := db.SSHKeyExistsForUser(key, userToCheckPermissions.ID)
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					log.Warn().Msg("Invalid SSH authentication attempt from " + ip)
+					return errors.New("gist not found")
+				}
+				errorSsh("Failed to get user by SSH key id", err)
+				return errors.New("internal server error")
+			}
+			_ = db.SSHKeyLastUsedNow(pubKey.Content)
 		}
-		_ = db.SSHKeyLastUsedNow(pubKey.Content)
 	}
 
 	repositoryPath := git.RepositoryPath(gist.User.Username, gist.Uuid)
