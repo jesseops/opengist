@@ -166,6 +166,19 @@ func writePermission(next Handler) Handler {
 	}
 }
 
+// ownerPermission restricts access to the gist owner only (not collaborators).
+// Use this for operations like delete, visibility change, and managing collaborators.
+func ownerPermission(next Handler) Handler {
+	return func(ctx *context.Context) error {
+		gist := ctx.GetData("gist").(*db.Gist)
+		user := ctx.User
+		if !gist.IsOwner(user) {
+			return ctx.ErrorRes(403, "Only the gist owner can perform this action", nil)
+		}
+		return next(ctx)
+	}
+}
+
 func adminPermission(next Handler) Handler {
 	return func(ctx *context.Context) error {
 		user := ctx.User
@@ -396,11 +409,18 @@ func gistInit(next Handler) Handler {
 
 		if gist.Private == db.PrivateVisibility {
 			if currUser == nil || currUser.ID != gist.UserID {
-				// Check for token-based auth via Authorization header
-				if tokenUser := getUserByToken(ctx); tokenUser != nil && tokenUser.ID == gist.UserID {
-					// Token is valid and belongs to gist owner, allow access
-				} else {
-					return ctx.NotFound("Gist not found")
+				// Check if the user is a collaborator
+				isCollab := false
+				if currUser != nil {
+					isCollab, _ = db.IsCollaborator(gist.ID, currUser.ID)
+				}
+				if !isCollab {
+					// Check for token-based auth via Authorization header
+					if tokenUser := getUserByToken(ctx); tokenUser != nil && tokenUser.ID == gist.UserID {
+						// Token is valid and belongs to gist owner, allow access
+					} else {
+						return ctx.NotFound("Gist not found")
+					}
 				}
 			}
 		}
@@ -449,6 +469,12 @@ func gistInit(next Handler) Handler {
 
 		if gist.Private > 0 {
 			ctx.SetData("NoIndex", true)
+		}
+
+		// Set canEdit for templates: true if user can edit (owner or collaborator)
+		if currUser != nil {
+			ctx.SetData("canEdit", gist.CanWrite(currUser))
+			ctx.SetData("isOwner", gist.IsOwner(currUser))
 		}
 
 		return next(ctx)
