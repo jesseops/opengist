@@ -14,6 +14,11 @@ import (
 	"github.com/thomiceli/opengist/internal/web/context"
 )
 
+var (
+	usernameRe = regexp.MustCompile(`^[a-zA-Z0-9-]+$`)
+	emailRe    = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+)
+
 type BulkResult struct {
 	Line     int
 	Username string
@@ -164,7 +169,7 @@ func validateUserFields(username, email, password string) string {
 	if len(username) > 24 {
 		return "Username must be 24 characters or less"
 	}
-	if !regexp.MustCompile(`^[a-zA-Z0-9-]+$`).MatchString(username) {
+	if !usernameRe.MatchString(username) {
 		return "Username must contain only alphanumeric characters and dashes"
 	}
 	if password == "" {
@@ -174,7 +179,7 @@ func validateUserFields(username, email, password string) string {
 		return "Password must be at least 6 characters"
 	}
 	if email != "" {
-		if !regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`).MatchString(email) {
+		if !emailRe.MatchString(email) {
 			return "Invalid email format"
 		}
 	}
