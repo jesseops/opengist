@@ -63,7 +63,7 @@ func (i *MeiliIndexer) open() (meilisearch.IndexManager, error) {
 	}
 
 	_, _ = i.client.Index(i.indexName).UpdateSettings(&meilisearch.Settings{
-		FilterableAttributes: []string{"GistID", "UserID", "Visibility", "Username", "Extensions", "Languages", "Topics"},
+		FilterableAttributes: []string{"GistID", "UserID", "Visibility", "Username", "Extensions", "Languages", "Topics", "CollaboratorIDs"},
 		SearchableAttributes: []string{"Content", "ContentSplit", "Username", "Title", "Description", "Filenames", "Extensions", "Languages", "Topics"},
 		RankingRules:         []string{"words", "typo", "proximity", "attribute", "sort", "exactness"},
 		TypoTolerance: &meilisearch.TypoTolerance{
@@ -133,7 +133,7 @@ func (i *MeiliIndexer) Search(queryMetadata SearchGistMetadata, userId uint, pag
 	}
 
 	var filters []string
-	filters = append(filters, fmt.Sprintf("(Visibility = 0 OR UserID = %d)", userId))
+	filters = append(filters, fmt.Sprintf("(Visibility = 0 OR UserID = %d OR CollaboratorIDs = %d)", userId, userId))
 
 	addFilter := func(field, value string) {
 		if value != "" && value != "." {
