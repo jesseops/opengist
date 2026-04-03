@@ -91,6 +91,8 @@ type Gist struct {
 
 	Topics    []GistTopic    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Languages []GistLanguage `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+
+	Pinned bool `gorm:"default:false"`
 }
 
 type Like struct {
@@ -141,7 +143,7 @@ func GetAllGistsForCurrentUser(currentUserId uint, offset int, sort string, orde
 		Where("gists.private = 0 or gists.user_id = ?", currentUserId).
 		Limit(11).
 		Offset(offset * 10).
-		Order(sort + "_at " + order).
+		Order("gists.pinned DESC, " + sort + "_at " + order).
 		Find(&gists).Error
 
 	return gists, err
@@ -341,6 +343,12 @@ func (gist *Gist) Delete() error {
 	}
 
 	return db.Delete(&gist).Error
+}
+
+func (gist *Gist) SetPinned(pinned bool) error {
+	return db.Model(&Gist{}).
+		Where("id = ?", gist.ID).
+		Update("pinned", pinned).Error
 }
 
 func (gist *Gist) SetLastActiveNow() error {

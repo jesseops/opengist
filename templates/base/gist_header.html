@@ -66,6 +66,15 @@
                     </a>
                 </div>
                 {{ end }}
+                {{ if .userLogged }}{{ if .userLogged.IsAdmin }}
+                <form id="pin" class="ml-2 flex items-center" method="post" action="{{ $.c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}/pin">
+                    {{ .csrfHtml }}
+                    <button type="submit" class="relative inline-flex items-center space-x-2 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-2 py-1.5 text-xs font-medium {{ if .gist.Pinned }}text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900{{ else }}text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-gray-700{{ end }} hover:border-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 leading-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 mr-2"><path d="M16 2a1 1 0 00-.707.293l-4 4a1 1 0 00-.186.316L9.5 10.2 4.293 15.407a1 1 0 000 1.414l2.886 2.886a1 1 0 001.414 0L13.8 14.5l3.591-1.607a1 1 0 00.316-.186l4-4A1 1 0 0022 8V3a1 1 0 00-1-1h-5zM2 22a1 1 0 011-1l4.5-4.5-1-1L2 20a1 1 0 000 2z"/></svg>
+                        {{ if .gist.Pinned }}{{ .locale.Tr "gist.unpin" }}{{ else }}{{ .locale.Tr "gist.pin" }}{{ end }}
+                    </button>
+                </form>
+                {{ end }}{{ end }}
                 {{ if .userLogged }}{{ if eq .gist.User.Username .userLogged.Username }}
                 <div class="ml-2 flex items-center">
                     <a href="{{ $.c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}/edit" class="relative inline-flex items-center space-x-2 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-2 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-500 hover:text-slate-700 dark:hover:text-slate-300 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 leading-3">
