@@ -61,19 +61,11 @@ code.hljs {
 }
 
 .cm-line, .cm-gutter {
-    @apply bg-white dark:bg-gray-900 dark:caret-white caret-slate-700 px-1;
-}
-
-.cm-activeLine, .cm-activeLineGutter {
-    @apply bg-gray-50 dark:bg-gray-800;
-}
-
-.cm-gutters {
-    border: none !important;
+    @apply px-1;
 }
 
 .cm-gutterElement {
-    @apply text-gray-700 dark:text-gray-300 px-4;
+    @apply px-4;
 }
 
 .code td {

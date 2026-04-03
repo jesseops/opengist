@@ -2,7 +2,8 @@ import {EditorView, gutter, keymap, lineNumbers} from "@codemirror/view";
 import {Compartment, EditorState, Facet, Line, SelectionRange} from "@codemirror/state";
 import {defaultKeymap, indentLess} from "@codemirror/commands";
 import {languages} from "@codemirror/language-data";
-import {LanguageDescription, syntaxHighlighting, defaultHighlightStyle} from "@codemirror/language";
+import {LanguageDescription} from "@codemirror/language";
+import {catppuccinMacchiato, catppuccinLatte} from "@catppuccin/codemirror";
 
 // Curated list of popular languages to show in the dropdown.
 // These names must match LanguageDescription.name from @codemirror/language-data.
@@ -75,9 +76,11 @@ function populateLanguageSelect(select: HTMLSelectElement) {
     });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    EditorView.theme({}, {dark: true});
+function isDarkMode(): boolean {
+    return document.documentElement.classList.contains("dark");
+}
 
+document.addEventListener("DOMContentLoaded", () => {
     let editorsjs: EditorView[] = [];
     let editorsParentdom = document.getElementById("editors")!;
     let allEditorsdom = document.querySelectorAll("#editors > .editor");
@@ -91,7 +94,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let indentSize = new Compartment(),
         wrapMode = new Compartment(),
-        indentType = new Compartment();
+        indentType = new Compartment(),
+        themeConfig = new Compartment();
+
+    // Watch for dark mode changes and update all editors
+    const observer = new MutationObserver(() => {
+        const theme = isDarkMode() ? catppuccinMacchiato : catppuccinLatte;
+        editorsjs.forEach(editor => {
+            editor.dispatch({effects: themeConfig.reconfigure(theme)});
+        });
+    });
+    observer.observe(document.documentElement, {attributes: true, attributeFilter: ["class"]});
 
     const newEditor = (dom: HTMLElement, value: string = ""): EditorView => {
         // Each editor gets its own language compartment so languages can differ per file
@@ -110,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 indentSize.of(EditorState.tabSize.of(2)),
                 wrapMode.of([]),
                 indentType.of(txtFacet.of("space")),
-                syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
+                themeConfig.of(isDarkMode() ? catppuccinMacchiato : catppuccinLatte),
                 langCompartment.of([]),
             ],
         });
