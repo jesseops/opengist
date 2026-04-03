@@ -1,0 +1,78 @@
+{{ template "header" .}}
+{{ template "admin_header" .}}
+
+<h2 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">{{ .locale.Tr "admin.create-users.single" }}</h2>
+<h3 class="text-sm text-gray-600 dark:text-gray-400 italic mb-4">
+    {{ .locale.Tr "admin.create-users.single.help" }}
+</h3>
+
+<form action="{{ $.c.ExternalUrl }}/admin-panel/create-users" method="POST">
+    <div class="flex space-x-4">
+        <div class="flex-1">
+            <label for="username" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ .locale.Tr "admin.create-users.username" }}</label>
+            <input type="text" id="username" name="username" required pattern="[a-zA-Z0-9-]+" maxlength="24" class="dark:bg-gray-800 appearance-none block w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-600 dark:placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+        </div>
+        <div class="flex-1">
+            <label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ .locale.Tr "admin.create-users.email" }}</label>
+            <input type="email" id="email" name="email" class="dark:bg-gray-800 appearance-none block w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-600 dark:placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+        </div>
+        <div class="flex-1">
+            <label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ .locale.Tr "admin.create-users.password" }}</label>
+            <input type="text" id="password" name="password" required minlength="6" class="dark:bg-gray-800 appearance-none block w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-600 dark:placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+        </div>
+    </div>
+    <div class="mt-4">
+        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent border-gray-200 dark:border-gray-700 text-sm font-medium rounded-md shadow-sm text-white dark:text-white bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">{{ .locale.Tr "admin.create-users.create" }}</button>
+    </div>
+    {{ .csrfHtml }}
+</form>
+
+<hr class="my-6 border-gray-200 dark:border-gray-700" />
+
+<h2 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">{{ .locale.Tr "admin.create-users.bulk" }}</h2>
+<h3 class="text-sm text-gray-600 dark:text-gray-400 italic mb-4">
+    {{ .locale.Tr "admin.create-users.bulk.help" }}
+</h3>
+
+<form action="{{ $.c.ExternalUrl }}/admin-panel/create-users/bulk" method="POST">
+    <div>
+        <label for="csvdata" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CSV Data</label>
+        <textarea id="csvdata" name="csvdata" rows="10" required class="dark:bg-gray-800 appearance-none block w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-600 dark:placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm font-mono" placeholder="{{ .locale.Tr "admin.create-users.bulk.placeholder" }}"></textarea>
+    </div>
+    <div class="mt-4">
+        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent border-gray-200 dark:border-gray-700 text-sm font-medium rounded-md shadow-sm text-white dark:text-white bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">{{ .locale.Tr "admin.create-users.bulk.create" }}</button>
+    </div>
+    {{ .csrfHtml }}
+</form>
+
+{{ if .bulkResults }}
+<hr class="my-6 border-gray-200 dark:border-gray-700" />
+<div class="mt-4">
+    <h3 class="text-md font-semibold text-slate-700 dark:text-slate-300 mb-3">Results</h3>
+    <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+        <table class="min-w-full divide-y divide-slate-300 dark:divide-gray-500">
+            <thead>
+                <tr>
+                    <th scope="col" class="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-bold text-slate-700 dark:text-slate-300 sm:pl-0">Line</th>
+                    <th scope="col" class="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-300">Username</th>
+                    <th scope="col" class="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-300">Status</th>
+                    <th scope="col" class="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-300">Detail</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-300 dark:divide-gray-500">
+            {{ range $result := .bulkResults }}
+                <tr>
+                    <td class="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-slate-700 dark:text-slate-300 sm:pl-0">{{ $result.Line }}</td>
+                    <td class="whitespace-nowrap px-2 py-2 text-sm text-slate-700 dark:text-slate-300">{{ $result.Username }}</td>
+                    <td class="whitespace-nowrap px-2 py-2 text-sm {{ if $result.Success }}text-green-600 dark:text-green-400{{ else }}text-rose-500 dark:text-rose-400{{ end }}">{{ if $result.Success }}OK{{ else }}Failed{{ end }}</td>
+                    <td class="px-2 py-2 text-sm text-slate-700 dark:text-slate-300">{{ $result.Error }}</td>
+                </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{ end }}
+
+{{ template "admin_footer" .}}
+{{ template "footer" .}}
