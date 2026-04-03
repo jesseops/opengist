@@ -144,7 +144,7 @@ func visibleByUser(currentUserId uint) func(tx *gorm.DB) *gorm.DB {
 		return tx.
 			Joins("LEFT JOIN gist_collaborators ON gist_collaborators.gist_id = gists.id AND gist_collaborators.user_id = ?", currentUserId).
 			Where("gists.private = 0 OR gists.user_id = ? OR gist_collaborators.user_id IS NOT NULL", currentUserId).
-			Select("DISTINCT gists.*")
+			Group("gists.id")
 	}
 }
 
