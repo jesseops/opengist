@@ -207,7 +207,7 @@
         <div>
             {{ if ne (len .gists) 0 }}
                 {{ range $gist := .gists }}
-                    {{ $nest := dict "gist" $gist "c" $.c "locale" $.locale "DisableGravatar" $.DisableGravatar "searchQuery" $.searchQuery }}
+                    {{ $nest := dict "gist" $gist "c" $.c "locale" $.locale "DisableGravatar" $.DisableGravatar "searchQuery" $.searchQuery "userLogged" $.userLogged "csrfHtml" $.csrfHtml }}
                     {{ template "_gist_preview" $nest }}
                 {{ end }}
 

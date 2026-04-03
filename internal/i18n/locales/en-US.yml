@@ -356,6 +356,8 @@ flash.auth.oauth-session-expired: OAuth2 session expired, please try again
 flash.auth.oauth-already-linked: This %s account is already linked to another user
 
 flash.gist.visibility-changed: Gist visibility has been changed
+flash.gist.pinned: Gist has been pinned
+flash.gist.unpinned: Gist has been unpinned
 flash.gist.deleted: Gist has been deleted
 flash.gist.fork-own-gist: Unable to fork own gists
 flash.gist.forked: Gist has been forked

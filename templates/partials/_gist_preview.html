@@ -1,7 +1,7 @@
 {{ define "_gist_preview" }}
 
 
-    <div class="mb-8">
+    <div class="mb-8{{ if .gist.Pinned }} bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 -mx-4{{ end }}">
         <div class="flex ">
             <div class="div">
                 <a href="{{ .c.ExternalUrl }}/{{ .gist.User.Username }}">
@@ -15,6 +15,7 @@
             <div class="flex-auto">
                 <div class="flex flex-col lg:flex-row">
                     <h4 class="text-md leading-tight break-all py-1 flex-auto">
+                        {{ if .gist.Pinned }}<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 inline-flex text-amber-500 mr-1" title="Pinned"><path d="M16 2a1 1 0 00-.707.293l-4 4a1 1 0 00-.186.316L9.5 10.2 4.293 15.407a1 1 0 000 1.414l2.886 2.886a1 1 0 001.414 0L13.8 14.5l3.591-1.607a1 1 0 00.316-.186l4-4A1 1 0 0022 8V3a1 1 0 00-1-1h-5zM2 22a1 1 0 011-1l4.5-4.5-1-1L2 20a1 1 0 000 2z"/></svg>{{ end }}
                         <a href="{{ .c.ExternalUrl }}/{{ .gist.User.Username }}">{{ .gist.User.Username }}</a> <span class="text-slate-700 dark:text-slate-300">/</span> <a class="font-bold" href="{{ .c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}">{{ .gist.Title }}</a>
                     </h4>
                     <div class="flex space-x-4 lg:flex-row flex py-1 lg:py-0 lg:ml-auto text-slate-500">
@@ -36,6 +37,17 @@
                             </svg>
                             <span class="whitespace-nowrap">{{ .gist.NbFiles }} {{ .locale.Tr "gist.list.files" }}</span>
                         </div>
+                        {{ if .userLogged }}{{ if .userLogged.IsAdmin }}
+                        <div class="flex items-center float-right text-xs">
+                            <form method="post" action="{{ .c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}/pin">
+                                {{ .csrfHtml }}
+                                <button type="submit" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ if .gist.Pinned }}bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-200 dark:hover:bg-amber-800{{ else }}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600{{ end }}" title="{{ if .gist.Pinned }}Unpin{{ else }}Pin{{ end }} this gist">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 mr-1"><path d="M16 2a1 1 0 00-.707.293l-4 4a1 1 0 00-.186.316L9.5 10.2 4.293 15.407a1 1 0 000 1.414l2.886 2.886a1 1 0 001.414 0L13.8 14.5l3.591-1.607a1 1 0 00.316-.186l4-4A1 1 0 0022 8V3a1 1 0 00-1-1h-5zM2 22a1 1 0 011-1l4.5-4.5-1-1L2 20a1 1 0 000 2z"/></svg>
+                                    {{ if .gist.Pinned }}Unpin{{ else }}Pin{{ end }}
+                                </button>
+                            </form>
+                        </div>
+                        {{ end }}{{ end }}
                     </div>
 
                 </div>
