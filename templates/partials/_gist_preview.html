@@ -41,9 +41,9 @@
                         <div class="flex items-center float-right text-xs">
                             <form method="post" action="{{ .c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}/pin">
                                 {{ .csrfHtml }}
-                                <button type="submit" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ if .gist.Pinned }}bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-200 dark:hover:bg-amber-800{{ else }}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600{{ end }}" title="{{ if .gist.Pinned }}Unpin{{ else }}Pin{{ end }} this gist">
+                                <button type="submit" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ if .gist.Pinned }}bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-200 dark:hover:bg-amber-800{{ else }}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600{{ end }}" title="{{ if .gist.Pinned }}{{ .locale.Tr "gist.unpin" }}{{ else }}{{ .locale.Tr "gist.pin" }}{{ end }}">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 mr-1"><path d="M16 2a1 1 0 00-.707.293l-4 4a1 1 0 00-.186.316L9.5 10.2 4.293 15.407a1 1 0 000 1.414l2.886 2.886a1 1 0 001.414 0L13.8 14.5l3.591-1.607a1 1 0 00.316-.186l4-4A1 1 0 0022 8V3a1 1 0 00-1-1h-5zM2 22a1 1 0 011-1l4.5-4.5-1-1L2 20a1 1 0 000 2z"/></svg>
-                                    {{ if .gist.Pinned }}Unpin{{ else }}Pin{{ end }}
+                                    {{ if .gist.Pinned }}{{ .locale.Tr "gist.unpin" }}{{ else }}{{ .locale.Tr "gist.pin" }}{{ end }}
                                 </button>
                             </form>
                         </div>

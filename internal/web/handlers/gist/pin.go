@@ -9,14 +9,15 @@ import (
 func TogglePin(ctx *context.Context) error {
 	gist := ctx.GetData("gist").(*db.Gist)
 
-	if err := gist.SetPinned(!gist.Pinned); err != nil {
+	newPinned := !gist.Pinned
+	if err := gist.SetPinned(newPinned); err != nil {
 		return ctx.ErrorRes(500, "Error toggling pin status", err)
 	}
 
-	if gist.Pinned {
-		ctx.AddFlash(ctx.Tr("flash.gist.unpinned"), "success")
-	} else {
+	if newPinned {
 		ctx.AddFlash(ctx.Tr("flash.gist.pinned"), "success")
+	} else {
+		ctx.AddFlash(ctx.Tr("flash.gist.unpinned"), "success")
 	}
 	return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier())
 }
