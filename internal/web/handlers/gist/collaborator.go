@@ -58,6 +58,7 @@ func AddCollaborator(ctx *context.Context) error {
 		return ctx.ErrorRes(500, "Error adding collaborator", err)
 	}
 
+	gist.AddInIndex()
 	ctx.AddFlash(username+" has been added as a collaborator", "success")
 	return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier() + "/collaborators")
 }
@@ -81,6 +82,7 @@ func RemoveCollaborator(ctx *context.Context) error {
 		return ctx.ErrorRes(500, "Error removing collaborator", err)
 	}
 
+	gist.AddInIndex()
 	ctx.AddFlash(username+" has been removed as a collaborator", "success")
 	return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier() + "/collaborators")
 }

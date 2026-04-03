@@ -38,6 +38,15 @@ func RemoveCollaborator(gistID uint, userID uint) error {
 		Delete(&GistCollaborator{}).Error
 }
 
+// GetCollaboratorIDsForGist returns just the user IDs of collaborators for a gist.
+func GetCollaboratorIDsForGist(gistID uint) ([]uint, error) {
+	var ids []uint
+	err := db.Model(&GistCollaborator{}).
+		Where("gist_id = ?", gistID).
+		Pluck("user_id", &ids).Error
+	return ids, err
+}
+
 // SearchUsers searches for users by username prefix, excluding a given user ID.
 func SearchUsers(query string, excludeUserID uint, limit int) ([]*User, error) {
 	var users []*User

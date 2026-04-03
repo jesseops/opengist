@@ -133,12 +133,24 @@ func GetGistByID(gistId string) (*Gist, error) {
 	return gist, err
 }
 
+// visibleByUser is a GORM scope that filters gists to those visible by the
+// given user: public gists, gists owned by the user, or gists where the user
+// is a collaborator.
+func visibleByUser(currentUserId uint) func(tx *gorm.DB) *gorm.DB {
+	return func(tx *gorm.DB) *gorm.DB {
+		return tx.
+			Joins("LEFT JOIN gist_collaborators ON gist_collaborators.gist_id = gists.id AND gist_collaborators.user_id = ?", currentUserId).
+			Where("gists.private = 0 OR gists.user_id = ? OR gist_collaborators.user_id IS NOT NULL", currentUserId).
+			Distinct("gists.id")
+	}
+}
+
 func GetAllGistsForCurrentUser(currentUserId uint, offset int, sort string, order string) ([]*Gist, error) {
 	var gists []*Gist
 	err := db.Preload("User").
 		Preload("Forked.User").
 		Preload("Topics").
-		Where("gists.private = 0 or gists.user_id = ?", currentUserId).
+		Scopes(visibleByUser(currentUserId)).
 		Limit(11).
 		Offset(offset * 10).
 		Order(sort + "_at " + order).
@@ -161,7 +173,7 @@ func GetAllGists(offset int) ([]*Gist, error) {
 func GetAllGistsFromSearch(currentUserId uint, query string, offset int, sort string, order string, topic string) ([]*Gist, error) {
 	var gists []*Gist
 	tx := db.Preload("User").Preload("Forked.User").Preload("Topics").
-		Where("((gists.private = 0) or (gists.private > 0 and gists.user_id = ?))", currentUserId).
+		Scopes(visibleByUser(currentUserId)).
 		Where("gists.title like ? or gists.description like ?", "%"+query+"%", "%"+query+"%")
 
 	if topic != "" {
@@ -179,7 +191,7 @@ func GetAllGistsFromSearch(currentUserId uint, query string, offset int, sort st
 
 func gistsFromUserStatement(fromUserId uint, currentUserId uint) *gorm.DB {
 	return db.Preload("User").Preload("Forked.User").Preload("Topics").
-		Where("((gists.private = 0) or (gists.private > 0 and gists.user_id = ?))", currentUserId).
+		Scopes(visibleByUser(currentUserId)).
 		Where("users.id = ?", fromUserId).
 		Joins("join users on gists.user_id = users.id")
 }
@@ -229,7 +241,7 @@ func CountAllGistsFromUser(fromUserId uint, currentUserId uint) (int64, error) {
 
 func likedStatement(fromUserId uint, currentUserId uint) *gorm.DB {
 	return db.Preload("User").Preload("Forked.User").Preload("Topics").
-		Where("((gists.private = 0) or (gists.private > 0 and gists.user_id = ?))", currentUserId).
+		Scopes(visibleByUser(currentUserId)).
 		Where("likes.user_id = ?", fromUserId).
 		Joins("join likes on gists.id = likes.gist_id").
 		Joins("join users on likes.user_id = users.id")
@@ -252,7 +264,8 @@ func CountAllGistsLikedByUser(fromUserId uint, currentUserId uint) (int64, error
 
 func forkedStatement(fromUserId uint, currentUserId uint) *gorm.DB {
 	return db.Preload("User").Preload("Forked.User").Preload("Topics").
-		Where("gists.forked_id is not null and ((gists.private = 0) or (gists.private > 0 and gists.user_id = ?))", currentUserId).
+		Scopes(visibleByUser(currentUserId)).
+		Where("gists.forked_id is not null").
 		Where("gists.user_id = ?", fromUserId).
 		Joins("join users on gists.user_id = users.id")
 }
@@ -285,7 +298,7 @@ func GetAllGistsVisibleByUser(userId uint) ([]uint, error) {
 	var gists []uint
 
 	err := db.Table("gists").
-		Where("gists.private = 0 or gists.user_id = ?", userId).
+		Scopes(visibleByUser(userId)).
 		Pluck("gists.id", &gists).Error
 
 	return gists, err
@@ -832,20 +845,26 @@ func (gist *Gist) ToIndexedGist() (*index.Gist, error) {
 		return nil, err
 	}
 
+	collabIDs, err := GetCollaboratorIDsForGist(gist.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	indexedGist := &index.Gist{
-		GistID:      gist.ID,
-		UserID:      gist.UserID,
-		Visibility:  gist.Private.Uint(),
-		Username:    gist.User.Username,
-		Description: gist.Description,
-		Title:       gist.Title,
-		Content:     wholeContent,
-		Filenames:   fileNames,
-		Extensions:  exts,
-		Languages:   langs,
-		Topics:      topics,
-		CreatedAt:   gist.CreatedAt,
-		UpdatedAt:   gist.UpdatedAt,
+		GistID:          gist.ID,
+		UserID:          gist.UserID,
+		Visibility:      gist.Private.Uint(),
+		Username:        gist.User.Username,
+		Description:     gist.Description,
+		Title:           gist.Title,
+		Content:         wholeContent,
+		Filenames:       fileNames,
+		Extensions:      exts,
+		Languages:       langs,
+		Topics:          topics,
+		CollaboratorIDs: collabIDs,
+		CreatedAt:       gist.CreatedAt,
+		UpdatedAt:       gist.UpdatedAt,
 	}
 
 	return indexedGist, nil

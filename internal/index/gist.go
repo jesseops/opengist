@@ -14,19 +14,20 @@ var SearchFieldMap = map[string]string{
 }
 
 type Gist struct {
-	GistID      uint
-	UserID      uint
-	Visibility  uint
-	Username    string
-	Description string
-	Title       string
-	Content     string
-	Filenames   []string
-	Extensions  []string
-	Languages   []string
-	Topics      []string
-	CreatedAt   int64
-	UpdatedAt   int64
+	GistID          uint
+	UserID          uint
+	Visibility      uint
+	Username        string
+	Description     string
+	Title           string
+	Content         string
+	Filenames       []string
+	Extensions      []string
+	Languages       []string
+	Topics          []string
+	CollaboratorIDs []uint
+	CreatedAt       int64
+	UpdatedAt       int64
 }
 
 type SearchGistMetadata struct {

@@ -111,6 +111,7 @@ func (i *BleveIndexer) open() (bleve.Index, error) {
 	docMapping.AddFieldMappingsAt("GistID", bleve.NewNumericFieldMapping())
 	docMapping.AddFieldMappingsAt("UserID", bleve.NewNumericFieldMapping())
 	docMapping.AddFieldMappingsAt("Visibility", bleve.NewNumericFieldMapping())
+	docMapping.AddFieldMappingsAt("CollaboratorIDs", bleve.NewNumericFieldMapping())
 
 	// Content: dual indexing (exact + split)
 	// "Content" uses the property name so Bleve resolves its analyzer correctly
@@ -279,7 +280,7 @@ func (i *BleveIndexer) Search(metadata SearchGistMetadata, userId uint, page int
 		}
 	}
 
-	// Visibility filtering: show public gists (Visibility=0) OR user's own gists
+	// Visibility filtering: show public gists, user's own gists, or gists where user is a collaborator
 	visibilityZero := float64(0)
 	truee := true
 	publicQuery := bleve.NewNumericRangeInclusiveQuery(&visibilityZero, &visibilityZero, &truee, &truee)
@@ -289,7 +290,10 @@ func (i *BleveIndexer) Search(metadata SearchGistMetadata, userId uint, page int
 	userIdQuery := bleve.NewNumericRangeInclusiveQuery(&userIdMatch, &userIdMatch, &truee, &truee)
 	userIdQuery.SetField("UserID")
 
-	accessQuery := bleve.NewDisjunctionQuery(publicQuery, userIdQuery)
+	collabQuery := bleve.NewNumericRangeInclusiveQuery(&userIdMatch, &userIdMatch, &truee, &truee)
+	collabQuery.SetField("CollaboratorIDs")
+
+	accessQuery := bleve.NewDisjunctionQuery(publicQuery, userIdQuery, collabQuery)
 	indexerQuery = bleve.NewConjunctionQuery(accessQuery, indexerQuery)
 
 	buildFieldQuery := func(field, value string) query.Query {
