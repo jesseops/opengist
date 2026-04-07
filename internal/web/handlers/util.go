@@ -35,6 +35,7 @@ type PaginationParams struct {
 	Language   string `schema:"language,omitempty"`
 	Topics     string `schema:"topics,omitempty"`
 	Query      string `schema:"q,omitempty"`
+	W          string `schema:"w,omitempty"`
 
 	HasPrevious bool `schema:"-"` // Exclude from URL parameters
 	HasNext     bool `schema:"-"`

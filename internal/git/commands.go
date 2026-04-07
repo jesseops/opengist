@@ -28,6 +28,10 @@ const truncateLimit = 2 << 18
 const diffSize = 2 << 12
 const maxFilesPerDiffCommit = 10
 
+type DiffOptions struct {
+	IgnoreWhitespace bool
+}
+
 type RevisionNotFoundError struct{}
 
 func (m *RevisionNotFoundError) Error() string {
@@ -298,23 +302,28 @@ func GetFileSize(user string, gist string, revision string, filename string) (ui
 	return strconv.ParseUint(strings.TrimSuffix(string(stdout), "\n"), 10, 64)
 }
 
-func GetLog(user string, gist string, skip int) ([]*Commit, error) {
+func GetLog(user string, gist string, skip int, opts DiffOptions) ([]*Commit, error) {
 	repositoryPath := RepositoryPath(user, gist)
 
-	cmd := exec.Command(
-		"git",
+	args := []string{
 		"--no-pager",
 		"log",
-		"-n",
-		"11",
+		"-n", "11",
 		"--no-color",
 		"-p",
-		"--skip",
-		strconv.Itoa(skip),
+		"--diff-algorithm=histogram",
+		"--skip", strconv.Itoa(skip),
 		"--format=format:c %H%na %aN%nm %ae%nt %at",
 		"--shortstat",
-		"HEAD",
-	)
+	}
+
+	if opts.IgnoreWhitespace {
+		args = append(args, "--ignore-all-space", "--ignore-blank-lines")
+	}
+
+	args = append(args, "HEAD")
+
+	cmd := exec.Command("git", args...)
 	cmd.Dir = repositoryPath
 	stdout, _ := cmd.StdoutPipe()
 	err := cmd.Start()

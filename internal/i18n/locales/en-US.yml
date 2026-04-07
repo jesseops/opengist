@@ -125,6 +125,7 @@ gist.revision.empty-file: Empty file
 gist.revision.binary-file-changes: Binary file changes are not shown
 gist.revision.no-changes: No changes
 gist.revision.no-revisions: No revisions to show
+gist.revision.ignore-whitespace: Ignore whitespace
 gist.revision-of: Revision of %s
 
 settings: Settings

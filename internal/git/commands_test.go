@@ -100,7 +100,7 @@ like Opengist actually`,
 	require.False(t, truncated, "Content should not be truncated")
 	require.Equal(t, "I really\nlike Opengist actually", content, "Content is not correct")
 
-	commits, err := GetLog("thomas", "gist1", 0)
+	commits, err := GetLog("thomas", "gist1", 0, DiffOptions{})
 	require.NoError(t, err, "Could not get log")
 	require.Equal(t, 2, len(commits), "Commits count are not correct")
 	require.Regexp(t, "[a-f0-9]{40}", commits[0].Hash, "Commit ID is not correct")
@@ -157,7 +157,7 @@ like Opengist actually`,
 		IsDeleted: false,
 	}, "File new_file.txt is not correct")
 
-	commitsSkip1, err := GetLog("thomas", "gist1", 1)
+	commitsSkip1, err := GetLog("thomas", "gist1", 1, DiffOptions{})
 	require.NoError(t, err, "Could not get log")
 	require.Equal(t, commitsSkip1[0], commits[1], "Commits skips are not correct")
 }
