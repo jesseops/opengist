@@ -519,8 +519,8 @@ func (gist *Gist) FileNames(revision string) ([]string, error) {
 	return git.GetFilesOfRepository(gist.User.Username, gist.Uuid, revision)
 }
 
-func (gist *Gist) Log(skip int) ([]*git.Commit, error) {
-	return git.GetLog(gist.User.Username, gist.Uuid, skip)
+func (gist *Gist) Log(skip int, opts git.DiffOptions) ([]*git.Commit, error) {
+	return git.GetLog(gist.User.Username, gist.Uuid, skip, opts)
 }
 
 func (gist *Gist) NbCommits() (string, error) {
