@@ -91,6 +91,7 @@ type Gist struct {
 
 	Topics    []GistTopic    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Languages []GistLanguage `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Comments  []Comment      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:GistID"`
 }
 
 type Like struct {
