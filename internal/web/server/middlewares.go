@@ -173,7 +173,7 @@ func ownerPermission(next Handler) Handler {
 		gist := ctx.GetData("gist").(*db.Gist)
 		user := ctx.User
 		if !gist.IsOwner(user) {
-			return ctx.ErrorRes(403, "Only the gist owner can perform this action", nil)
+			return ctx.ErrorRes(403, ctx.Tr("error.gist-owner-only"), nil)
 		}
 		return next(ctx)
 	}
@@ -383,6 +383,16 @@ func getUserByToken(ctx *context.Context) *db.User {
 	return &accessToken.User
 }
 
+// canViewPrivateGist reports whether the session user, or the user behind a valid
+// read-scoped access token in the Authorization header, is the gist owner or one
+// of its collaborators.
+func canViewPrivateGist(ctx *context.Context, gist *db.Gist, sessionUser *db.User) bool {
+	if gist.CanWrite(sessionUser) {
+		return true
+	}
+	return gist.CanWrite(getUserByToken(ctx))
+}
+
 func gistInit(next Handler) Handler {
 	return func(ctx *context.Context) error {
 		currUser := ctx.User
@@ -407,22 +417,8 @@ func gistInit(next Handler) Handler {
 			return ctx.NotFound("Gist not found")
 		}
 
-		if gist.Private == db.PrivateVisibility {
-			if currUser == nil || currUser.ID != gist.UserID {
-				// Check if the user is a collaborator
-				isCollab := false
-				if currUser != nil {
-					isCollab, _ = db.IsCollaborator(gist.ID, currUser.ID)
-				}
-				if !isCollab {
-					// Check for token-based auth via Authorization header
-					if tokenUser := getUserByToken(ctx); tokenUser != nil && tokenUser.ID == gist.UserID {
-						// Token is valid and belongs to gist owner, allow access
-					} else {
-						return ctx.NotFound("Gist not found")
-					}
-				}
-			}
+		if gist.Private == db.PrivateVisibility && !canViewPrivateGist(ctx, gist, currUser) {
+			return ctx.NotFound("Gist not found")
 		}
 
 		ctx.SetData("gist", gist)

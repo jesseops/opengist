@@ -330,3 +330,51 @@ func TestAccessTokenWithRequireLogin(t *testing.T) {
 		})
 	})
 }
+
+func TestAccessTokenCollaboratorPrivateGistAccess(t *testing.T) {
+	s := webtest.Setup(t)
+	defer webtest.Teardown(t)
+
+	s.Register(t, "thomas")
+	s.Register(t, "alice")
+	s.Register(t, "carol")
+	_, gist, user, identifier := s.CreateGist(t, "2")
+
+	readToken := func(username string) map[string]string {
+		u, err := db.GetUserByUsername(username)
+		require.NoError(t, err)
+		token := &db.AccessToken{Name: "read-token", UserID: u.ID, ScopeGist: db.ReadPermission}
+		plain, err := token.GenerateToken()
+		require.NoError(t, err)
+		require.NoError(t, token.Create())
+		return map[string]string{"Authorization": "Token " + plain}
+	}
+	aliceToken := readToken("alice")
+	carolToken := readToken("carol")
+
+	alice, err := db.GetUserByUsername("alice")
+	require.NoError(t, err)
+
+	s.Logout()
+	gistUrl := "/" + user + "/" + identifier
+
+	t.Run("NotYetCollaborator", func(t *testing.T) {
+		s.RequestWithHeaders(t, "GET", gistUrl, nil, 404, aliceToken)
+	})
+
+	require.NoError(t, db.AddCollaborator(gist.ID, alice.ID))
+
+	t.Run("CollaboratorTokenGrantsAccess", func(t *testing.T) {
+		s.RequestWithHeaders(t, "GET", gistUrl, nil, 200, aliceToken)
+		s.RequestWithHeaders(t, "GET", gistUrl+".json", nil, 200, aliceToken)
+	})
+
+	t.Run("OtherUsersTokenStillDenied", func(t *testing.T) {
+		s.RequestWithHeaders(t, "GET", gistUrl, nil, 404, carolToken)
+	})
+
+	t.Run("RemovedCollaboratorTokenDenied", func(t *testing.T) {
+		require.NoError(t, db.RemoveCollaborator(gist.ID, alice.ID))
+		s.RequestWithHeaders(t, "GET", gistUrl, nil, 404, aliceToken)
+	})
+}
