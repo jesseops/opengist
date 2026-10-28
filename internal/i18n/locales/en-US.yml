@@ -128,6 +128,28 @@ gist.revision.no-revisions: No revisions to show
 gist.revision.ignore-whitespace: Ignore whitespace
 gist.revision-of: Revision of %s
 
+gist.header.collaborators: Collaborators
+gist.header.leave: Leave
+gist.header.leave-confirm: Do you want to stop collaborating on this gist ?
+
+gist.collaborators.title: Collaborators - %s
+gist.collaborators.help: Add people who can edit this gist. Collaborators can edit files but cannot delete the gist or change its visibility.
+gist.collaborators.username-placeholder: Type a username...
+gist.collaborators.add: Add
+gist.collaborators.can-edit: Can edit
+gist.collaborators.remove: Remove
+gist.collaborators.none: No collaborators yet. Add someone above to let them edit this gist.
+gist.collaborators.back: Back to gist
+
+gist.comments.title: Comments
+gist.comments.none: No comments yet.
+gist.comments.add: Add a comment
+gist.comments.placeholder: Write your comment here... Markdown is supported.
+gist.comments.submit: Submit
+gist.comments.login-to-comment: Log in to leave a comment.
+gist.comments.delete-confirm: Delete this comment ?
+gist.comments.on-revision: Comment on revision %s
+
 settings: Settings
 settings.email: Email
 settings.email-help: Used for commits and Gravatar
@@ -246,6 +268,7 @@ auth.totp.scan-qr-code: Scan the QR code below with your authenticator app to en
 
 error: Error
 error.page-not-found: Page not found
+error.gist-owner-only: Only the gist owner can perform this action
 error.bad-request: Bad request
 error.signup-disabled: Signing up is disabled
 error.signup-disabled-form: Signing up via registration form is disabled
@@ -345,6 +368,18 @@ admin.create-users.bulk.help: "Paste CSV data to create multiple users at once. 
 admin.create-users.bulk.placeholder: "username1,user1@example.com,password123\nusername2,user2@example.com,password456"
 admin.create-users.bulk.create: Create users
 admin.create-users.bulk.results: "Bulk creation results: %s created, %s failed"
+admin.create-users.error.username-required: Username is required
+admin.create-users.error.username-too-long: Username must be 24 characters or less
+admin.create-users.error.username-invalid: Username must contain only alphanumeric characters and dashes
+admin.create-users.error.username-reserved: Username is reserved
+admin.create-users.error.password-required: Password is required
+admin.create-users.error.password-too-short: Password must be at least 6 characters
+admin.create-users.error.email-invalid: Invalid email format
+admin.create-users.error.csv-empty: CSV data is empty
+admin.create-users.error.csv-parse: "Cannot parse CSV data: %s"
+admin.create-users.error.csv-fields: "Expected at least 3 fields: username,email,password"
+admin.create-users.error.database: "Database error: %s"
+admin.create-users.error.create-failed: "Creation failed: %s"
 
 flash.admin.user-created: User %s has been created
 flash.admin.user-deleted: User has been deleted
@@ -377,6 +412,15 @@ gist.unpin: Unpin
 gist.pinned: Pinned
 flash.gist.pinned: Gist has been pinned
 flash.gist.unpinned: Gist has been unpinned
+flash.gist.comment-empty: Comment cannot be empty
+flash.gist.comment-invalid-revision: Revision not found
+flash.gist.collaborator-username-required: Please enter a username
+flash.gist.collaborator-user-not-found: "User not found: %s"
+flash.gist.collaborator-is-owner: You can't add yourself as a collaborator
+flash.gist.collaborator-exists: "%s is already a collaborator"
+flash.gist.collaborator-added: "%s has been added as a collaborator"
+flash.gist.collaborator-removed: "%s has been removed as a collaborator"
+flash.gist.collaborator-left: You are no longer a collaborator on this gist
 flash.gist.deleted: Gist has been deleted
 flash.gist.fork-own-gist: Unable to fork own gists
 flash.gist.forked: Gist has been forked
