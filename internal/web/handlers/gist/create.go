@@ -168,7 +168,7 @@ func ProcessCreate(ctx *context.Context) error {
 		return ctx.ErrorRes(500, "Error creating the repository", err)
 	}
 
-	if err = gist.AddAndCommitFiles(&dto.Files); err != nil {
+	if err = gist.AddAndCommitFiles(&dto.Files, user); err != nil {
 		return ctx.ErrorRes(500, "Error adding and committing files", err)
 	}
 
@@ -188,5 +188,5 @@ func ProcessCreate(ctx *context.Context) error {
 		return ctx.ErrorRes(500, "Error updating preview and count", err)
 	}
 
-	return ctx.RedirectTo("/" + user.Username + "/" + gist.Identifier())
+	return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier())
 }

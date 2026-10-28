@@ -47,7 +47,7 @@ func Checkbox(ctx *context.Context) error {
 	if err = gist.AddAndCommitFile(&db.FileDTO{
 		Filename: filename,
 		Content:  markdown,
-	}); err != nil {
+	}, ctx.User); err != nil {
 		return ctx.ErrorRes(500, "Error adding and committing files", err)
 	}
 
