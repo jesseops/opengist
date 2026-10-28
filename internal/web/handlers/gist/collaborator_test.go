@@ -1,6 +1,7 @@
 package gist_test
 
 import (
+	"io"
 	"net/url"
 	"strconv"
 	"testing"
@@ -161,5 +162,89 @@ func TestComments(t *testing.T) {
 		comments, err := db.GetCommentsByGist(gist.ID, "")
 		require.NoError(t, err)
 		require.Empty(t, comments)
+	})
+}
+
+func TestCollaboratorLeave(t *testing.T) {
+	s := webtest.Setup(t)
+	defer webtest.Teardown(t)
+
+	s.Register(t, "alice")
+	s.Register(t, "carol")
+
+	_, gist, username, identifier := s.CreateGist(t, "2")
+	base := "/" + username + "/" + identifier
+
+	s.Login(t, "thomas")
+	s.Request(t, "POST", base+"/collaborators", url.Values{"username": {"alice"}}, 302)
+	s.Logout()
+
+	t.Run("NonCollaboratorLeaveIsNoop", func(t *testing.T) {
+		s.Login(t, "carol")
+		s.Request(t, "POST", base+"/collaborators/leave", nil, 404) // cannot see the private gist
+		s.Logout()
+	})
+
+	t.Run("CollaboratorLeaves", func(t *testing.T) {
+		s.Login(t, "alice")
+		resp := s.Request(t, "POST", base+"/collaborators/leave", nil, 302)
+		require.Equal(t, "/all", resp.Header.Get("Location"))
+		s.Request(t, "GET", base, nil, 404)
+		s.Logout()
+
+		alice, err := db.GetUserByUsername("alice")
+		require.NoError(t, err)
+		isCollab, err := db.IsCollaborator(gist.ID, alice.ID)
+		require.NoError(t, err)
+		require.False(t, isCollab)
+	})
+}
+
+func TestRevisionComments(t *testing.T) {
+	s := webtest.Setup(t)
+	defer webtest.Teardown(t)
+
+	_, gist, username, identifier := s.CreateGist(t, "0")
+	base := "/" + username + "/" + identifier
+
+	s.Login(t, "thomas")
+	// second commit so that there is an older revision to comment on
+	s.Request(t, "POST", base+"/edit", url.Values{"title": {"Test"}, "name": {"file.txt"}, "content": {"v2"}}, 302)
+
+	commits, err := gist.Log(0, git.DiffOptions{})
+	require.NoError(t, err)
+	require.Len(t, commits, 2)
+	oldHash := commits[1].Hash
+	shortHash := oldHash[:7]
+
+	t.Run("CommentViaShortHashIsStoredAsFullHash", func(t *testing.T) {
+		s.Request(t, "POST", base+"/comments", url.Values{"content": {"old rev"}, "revision": {shortHash}}, 302)
+		comments, err := db.GetCommentsByGist(gist.ID, oldHash)
+		require.NoError(t, err)
+		require.Len(t, comments, 1)
+		require.Equal(t, oldHash, comments[0].Revision)
+	})
+
+	t.Run("ShownOnShortAndFullHashPages", func(t *testing.T) {
+		for _, rev := range []string{shortHash, oldHash} {
+			resp := s.Request(t, "GET", base+"/rev/"+rev, nil, 200)
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			require.Contains(t, string(body), "old rev", "revision %s", rev)
+		}
+	})
+
+	t.Run("InvalidRevisionIsRejectedNotGistWide", func(t *testing.T) {
+		resp := s.Request(t, "POST", base+"/comments", url.Values{"content": {"bogus"}, "revision": {"does-not-exist"}}, 302)
+		require.Equal(t, base, resp.Header.Get("Location"))
+		comments, err := db.GetCommentsByGist(gist.ID, "")
+		require.NoError(t, err)
+		for _, c := range comments {
+			require.NotEqual(t, "bogus", c.Content)
+		}
+	})
+
+	t.Run("UnknownRevisionPageIs404", func(t *testing.T) {
+		s.Request(t, "GET", base+"/rev/deadbeef", nil, 404)
 	})
 }

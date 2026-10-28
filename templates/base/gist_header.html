@@ -85,13 +85,21 @@
                     </a>
                 </div>
                 {{ end }}
+                {{ if and .canEdit (not .isOwner) }}
+                <form id="leave" class="ml-2 flex items-center" method="post" action="{{ $.c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}/collaborators/leave">
+                    {{ .csrfHtml }}
+                    <button type="submit" onclick="return confirm('{{ .locale.Tr "gist.header.leave-confirm" }}')" class="relative inline-flex items-center space-x-2 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-2 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 leading-3">
+                        {{ .locale.Tr "gist.header.leave" }}
+                    </button>
+                </form>
+                {{ end }}
                 {{ if .isOwner }}
                 <div class="ml-2 flex items-center">
                     <a href="{{ $.c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}/collaborators" class="relative inline-flex items-center space-x-2 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-2 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-500 hover:text-slate-700 dark:hover:text-slate-300 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 leading-3">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        Collaborators
+                        {{ .locale.Tr "gist.header.collaborators" }}
                     </a>
                 </div>
                 <form id="delete" class="ml-2 flex items-center" method="post" action="{{ $.c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}/delete">

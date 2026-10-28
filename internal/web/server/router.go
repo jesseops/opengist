@@ -143,6 +143,7 @@ func (s *Server) registerRoutes() {
 			sC.GET("/collaborators", gist.Collaborators, logged, ownerPermission)
 			sC.POST("/collaborators", gist.AddCollaborator, logged, ownerPermission)
 			sC.POST("/collaborators/remove", gist.RemoveCollaborator, logged, ownerPermission)
+			sC.POST("/collaborators/leave", gist.LeaveCollaboration, logged)
 			sC.GET("/collaborators/search", gist.SearchUsersApi, logged, ownerPermission)
 		}
 	}

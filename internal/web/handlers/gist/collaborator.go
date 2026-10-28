@@ -17,7 +17,7 @@ func Collaborators(ctx *context.Context) error {
 	}
 
 	ctx.SetData("collaborators", collaborators)
-	ctx.SetData("htmlTitle", "Collaborators - "+gist.Title)
+	ctx.SetData("htmlTitle", ctx.TrH("gist.collaborators.title", gist.Title))
 	return ctx.Html("collaborators.html")
 }
 
@@ -27,20 +27,20 @@ func AddCollaborator(ctx *context.Context) error {
 
 	username := strings.TrimSpace(ctx.FormValue("username"))
 	if username == "" {
-		ctx.AddFlash("Please enter a username", "error")
+		ctx.AddFlash(ctx.Tr("flash.gist.collaborator-username-required"), "error")
 		return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier() + "/collaborators")
 	}
 
 	// Look up the user
 	user, err := db.GetUserByUsername(username)
 	if err != nil {
-		ctx.AddFlash("User not found: "+username, "error")
+		ctx.AddFlash(ctx.Tr("flash.gist.collaborator-user-not-found", username), "error")
 		return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier() + "/collaborators")
 	}
 
 	// Can't add yourself
 	if user.ID == gist.UserID {
-		ctx.AddFlash("You can't add yourself as a collaborator", "error")
+		ctx.AddFlash(ctx.Tr("flash.gist.collaborator-is-owner"), "error")
 		return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier() + "/collaborators")
 	}
 
@@ -50,7 +50,7 @@ func AddCollaborator(ctx *context.Context) error {
 		return ctx.ErrorRes(500, "Error checking collaborator status", err)
 	}
 	if isCollab {
-		ctx.AddFlash(username+" is already a collaborator", "error")
+		ctx.AddFlash(ctx.Tr("flash.gist.collaborator-exists", username), "error")
 		return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier() + "/collaborators")
 	}
 
@@ -59,7 +59,7 @@ func AddCollaborator(ctx *context.Context) error {
 	}
 
 	gist.AddInIndex()
-	ctx.AddFlash(username+" has been added as a collaborator", "success")
+	ctx.AddFlash(ctx.Tr("flash.gist.collaborator-added", username), "success")
 	return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier() + "/collaborators")
 }
 
@@ -69,12 +69,12 @@ func RemoveCollaborator(ctx *context.Context) error {
 
 	username := strings.TrimSpace(ctx.FormValue("username"))
 	if username == "" {
-		return ctx.ErrorRes(400, "Username is required", nil)
+		return ctx.ErrorRes(400, ctx.Tr("flash.gist.collaborator-username-required"), nil)
 	}
 
 	user, err := db.GetUserByUsername(username)
 	if err != nil {
-		ctx.AddFlash("User not found: "+username, "error")
+		ctx.AddFlash(ctx.Tr("flash.gist.collaborator-user-not-found", username), "error")
 		return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier() + "/collaborators")
 	}
 
@@ -83,8 +83,35 @@ func RemoveCollaborator(ctx *context.Context) error {
 	}
 
 	gist.AddInIndex()
-	ctx.AddFlash(username+" has been removed as a collaborator", "success")
+	ctx.AddFlash(ctx.Tr("flash.gist.collaborator-removed", username), "success")
 	return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier() + "/collaborators")
+}
+
+// LeaveCollaboration lets a collaborator remove themselves from a gist.
+func LeaveCollaboration(ctx *context.Context) error {
+	gist := ctx.GetData("gist").(*db.Gist)
+	gistUrl := "/" + gist.User.Username + "/" + gist.Identifier()
+
+	isCollab, err := db.IsCollaborator(gist.ID, ctx.User.ID)
+	if err != nil {
+		return ctx.ErrorRes(500, "Error checking collaborator status", err)
+	}
+	if !isCollab {
+		return ctx.RedirectTo(gistUrl)
+	}
+
+	if err := db.RemoveCollaborator(gist.ID, ctx.User.ID); err != nil {
+		return ctx.ErrorRes(500, "Error leaving gist", err)
+	}
+
+	gist.AddInIndex()
+	ctx.AddFlash(ctx.Tr("flash.gist.collaborator-left"), "success")
+
+	// a private gist is no longer accessible once the user has left it
+	if gist.Private == db.PrivateVisibility {
+		return ctx.RedirectTo("/all")
+	}
+	return ctx.RedirectTo(gistUrl)
 }
 
 // SearchUsersApi returns a JSON list of users matching a query, for autocomplete.
