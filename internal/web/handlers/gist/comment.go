@@ -20,10 +20,7 @@ func CreateComment(ctx *context.Context) error {
 		return ctx.RedirectTo("/login")
 	}
 
-	// Private gists: only owner can comment
-	if gist.Private == db.PrivateVisibility && user.ID != gist.UserID {
-		return ctx.ErrorRes(403, "You cannot comment on this gist", nil)
-	}
+	// gistInit already restricts private gists to the owner and collaborators.
 
 	content := ctx.FormValue("content")
 	if content == "" {
@@ -85,8 +82,8 @@ func DeleteComment(ctx *context.Context) error {
 		return ctx.ErrorRes(404, "Comment not found", nil)
 	}
 
-	// Only comment author or admin can delete
-	if comment.UserID != user.ID && !user.IsAdmin {
+	// Only the comment author, the gist owner or an admin can delete
+	if comment.UserID != user.ID && !gist.IsOwner(user) && !user.IsAdmin {
 		return ctx.ErrorRes(403, "You cannot delete this comment", nil)
 	}
 
