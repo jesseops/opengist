@@ -32,7 +32,7 @@ func TestRevisions(t *testing.T) {
 			"content": {"updated content", "okay"},
 		}, 302)
 
-		commits, err := gist.Log(0)
+		commits, err := gist.Log(0, git.DiffOptions{})
 		require.NoError(t, err)
 
 		require.Len(t, commits, 3)

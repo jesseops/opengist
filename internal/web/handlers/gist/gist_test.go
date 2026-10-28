@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/thomiceli/opengist/internal/db"
+	"github.com/thomiceli/opengist/internal/git"
 	"github.com/thomiceli/opengist/internal/web/context"
 	webtest "github.com/thomiceli/opengist/internal/web/test"
 )
@@ -92,7 +93,7 @@ func TestGistIndex(t *testing.T) {
 		}
 		require.True(t, found)
 
-		commits, err := gist.Log(0)
+		commits, err := gist.Log(0, git.DiffOptions{})
 		require.NoError(t, err)
 		require.Len(t, commits, 2)
 

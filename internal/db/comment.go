@@ -1,9 +1,9 @@
 package db
 
 type Comment struct {
-	ID        uint   `gorm:"primaryKey"`
-	GistID    uint   `gorm:"index"`
-	UserID    uint   `gorm:"index"`
+	ID        uint `gorm:"primaryKey"`
+	GistID    uint `gorm:"index"`
+	UserID    uint `gorm:"index"`
 	Content   string
 	Revision  string `gorm:"size:40;index"` // optional: scopes comment to a specific revision hash
 	CreatedAt int64
