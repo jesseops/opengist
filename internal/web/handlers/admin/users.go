@@ -11,12 +11,14 @@ import (
 
 	passwordpkg "github.com/thomiceli/opengist/internal/auth/password"
 	"github.com/thomiceli/opengist/internal/db"
+	"github.com/thomiceli/opengist/internal/validator"
 	"github.com/thomiceli/opengist/internal/web/context"
 )
 
 var (
-	usernameRe = regexp.MustCompile(`^[a-zA-Z0-9-]+$`)
-	emailRe    = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+	reservedNameValidator = validator.NewValidator()
+	usernameRe            = regexp.MustCompile(`^[a-zA-Z0-9-]+$`)
+	emailRe               = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
 )
 
 type BulkResult struct {
@@ -171,6 +173,9 @@ func validateUserFields(username, email, password string) string {
 	}
 	if !usernameRe.MatchString(username) {
 		return "Username must contain only alphanumeric characters and dashes"
+	}
+	if reservedNameValidator.Var(username, "notreserved") != nil {
+		return "Username is reserved"
 	}
 	if password == "" {
 		return "Password is required"
