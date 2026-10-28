@@ -1,5 +1,7 @@
 package db
 
+import "strings"
+
 type GistCollaborator struct {
 	GistID uint `gorm:"primaryKey;index"`
 	UserID uint `gorm:"primaryKey;index"`
@@ -47,10 +49,15 @@ func GetCollaboratorIDsForGist(gistID uint) ([]uint, error) {
 	return ids, err
 }
 
-// SearchUsers searches for users by username prefix, excluding a given user ID.
-func SearchUsers(query string, excludeUserID uint, limit int) ([]*User, error) {
+// SearchUsers searches for users by username prefix, excluding the gist owner and
+// users who are already collaborators on the gist.
+func SearchUsers(query string, gistID uint, ownerID uint, limit int) ([]*User, error) {
+	// "!" is used as the LIKE escape character since it needs no special quoting on any supported database.
+	escaped := strings.NewReplacer("!", "!!", "%", "!%", "_", "!_").Replace(query)
+
 	var users []*User
-	err := db.Where("username_normalized LIKE ? AND id != ?", query+"%", excludeUserID).
+	err := db.Where("username_normalized LIKE ? ESCAPE '!' AND id != ?", escaped+"%", ownerID).
+		Where("id NOT IN (SELECT user_id FROM gist_collaborators WHERE gist_id = ?)", gistID).
 		Limit(limit).
 		Find(&users).Error
 	return users, err

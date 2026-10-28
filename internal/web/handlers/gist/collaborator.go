@@ -96,7 +96,7 @@ func SearchUsersApi(ctx *context.Context) error {
 		return ctx.JSON(200, []map[string]string{})
 	}
 
-	users, err := db.SearchUsers(strings.ToLower(query), gist.UserID, 10)
+	users, err := db.SearchUsers(strings.ToLower(query), gist.ID, gist.UserID, 10)
 	if err != nil {
 		return ctx.ErrorRes(500, "Error searching users", err)
 	}
