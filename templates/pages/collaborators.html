@@ -4,10 +4,10 @@
         <div class="flex flex-col lg:flex-row">
             <div>
                 <h1 class="text-2xl font-bold leading-tight text-slate-700 dark:text-slate-300">
-                    Collaborators - {{ .gist.Title }}
+                    {{ .locale.Tr "gist.collaborators.title" .gist.Title }}
                 </h1>
                 <p class="mt-1 text-sm text-slate-500">
-                    Add people who can edit this gist. Collaborators can edit files but cannot delete the gist or change its visibility.
+                    {{ .locale.Tr "gist.collaborators.help" }}
                 </p>
             </div>
         </div>
@@ -18,7 +18,7 @@
             <form method="post" action="{{ $.c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}/collaborators" class="flex gap-2 mb-6">
                 {{ .csrfHtml }}
                 <div class="flex-1 relative" x-data="userSearch('{{ $.c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}/collaborators/search')">
-                    <input type="text" name="username" id="collab-username" placeholder="Type a username..."
+                    <input type="text" name="username" id="collab-username" placeholder="{{ .locale.Tr "gist.collaborators.username-placeholder" }}"
                         autocomplete="off"
                         x-model="query"
                         x-on:input.debounce.300ms="search()"
@@ -39,7 +39,7 @@
                     </div>
                 </div>
                 <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    Add
+                    {{ .locale.Tr "gist.collaborators.add" }}
                 </button>
             </form>
 
@@ -53,22 +53,22 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         <a href="{{ $.c.ExternalUrl }}/{{ .User.Username }}" class="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">{{ .User.Username }}</a>
-                        <span class="ml-2 text-xs text-slate-500">Can edit</span>
+                        <span class="ml-2 text-xs text-slate-500">{{ $.locale.Tr "gist.collaborators.can-edit" }}</span>
                     </div>
                     <form method="post" action="{{ $.c.ExternalUrl }}/{{ $.gist.User.Username }}/{{ $.gist.Identifier }}/collaborators/remove">
                         {{ $.csrfHtml }}
                         <input type="hidden" name="username" value="{{ .User.Username }}">
-                        <button type="submit" class="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300">Remove</button>
+                        <button type="submit" class="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300">{{ $.locale.Tr "gist.collaborators.remove" }}</button>
                     </form>
                 </div>
                 {{ end }}
             </div>
             {{ else }}
-            <p class="text-sm text-slate-500">No collaborators yet. Add someone above to let them edit this gist.</p>
+            <p class="text-sm text-slate-500">{{ .locale.Tr "gist.collaborators.none" }}</p>
             {{ end }}
 
             <div class="mt-6">
-                <a href="{{ $.c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}" class="text-sm text-primary-600 dark:text-primary-400 hover:underline">&larr; Back to gist</a>
+                <a href="{{ $.c.ExternalUrl }}/{{ .gist.User.Username }}/{{ .gist.Identifier }}" class="text-sm text-primary-600 dark:text-primary-400 hover:underline">&larr; {{ .locale.Tr "gist.collaborators.back" }}</a>
             </div>
         </div>
     </main>

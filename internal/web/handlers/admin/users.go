@@ -43,7 +43,7 @@ func AdminCreateUserProcess(ctx *context.Context) error {
 	password := ctx.FormValue("password")
 
 	if err := validateUserFields(username, email, password); err != "" {
-		ctx.AddFlash(err, "error")
+		ctx.AddFlash(ctx.Tr(err), "error")
 		return ctx.RedirectTo("/admin-panel/create-users")
 	}
 
@@ -68,7 +68,7 @@ func AdminCreateUsersBulkProcess(ctx *context.Context) error {
 
 	csvdata := ctx.FormValue("csvdata")
 	if strings.TrimSpace(csvdata) == "" {
-		ctx.AddFlash("CSV data is empty", "error")
+		ctx.AddFlash(ctx.Tr("admin.create-users.error.csv-empty"), "error")
 		return ctx.RedirectTo("/admin-panel/create-users")
 	}
 
@@ -76,7 +76,7 @@ func AdminCreateUsersBulkProcess(ctx *context.Context) error {
 	reader.FieldsPerRecord = -1 // allow variable fields
 	records, err := reader.ReadAll()
 	if err != nil {
-		ctx.AddFlash("Cannot parse CSV data: "+err.Error(), "error")
+		ctx.AddFlash(ctx.Tr("admin.create-users.error.csv-parse", err.Error()), "error")
 		return ctx.RedirectTo("/admin-panel/create-users")
 	}
 
@@ -97,7 +97,7 @@ func AdminCreateUsersBulkProcess(ctx *context.Context) error {
 				Line:     lineNum,
 				Username: safeGet(record, 0),
 				Success:  false,
-				Error:    "Expected at least 3 fields: username,email,password",
+				Error:    ctx.Tr("admin.create-users.error.csv-fields"),
 			})
 			failed++
 			continue
@@ -112,7 +112,7 @@ func AdminCreateUsersBulkProcess(ctx *context.Context) error {
 				Line:     lineNum,
 				Username: username,
 				Success:  false,
-				Error:    validationErr,
+				Error:    ctx.Tr(validationErr),
 			})
 			failed++
 			continue
@@ -123,7 +123,7 @@ func AdminCreateUsersBulkProcess(ctx *context.Context) error {
 				Line:     lineNum,
 				Username: username,
 				Success:  false,
-				Error:    "Database error: " + err.Error(),
+				Error:    ctx.Tr("admin.create-users.error.database", err.Error()),
 			})
 			failed++
 			continue
@@ -132,7 +132,7 @@ func AdminCreateUsersBulkProcess(ctx *context.Context) error {
 				Line:     lineNum,
 				Username: username,
 				Success:  false,
-				Error:    "Username already exists",
+				Error:    ctx.Tr("flash.auth.username-exists"),
 			})
 			failed++
 			continue
@@ -143,7 +143,7 @@ func AdminCreateUsersBulkProcess(ctx *context.Context) error {
 				Line:     lineNum,
 				Username: username,
 				Success:  false,
-				Error:    "Creation failed: " + err.Error(),
+				Error:    ctx.Tr("admin.create-users.error.create-failed", err.Error()),
 			})
 			failed++
 			continue
@@ -163,29 +163,30 @@ func AdminCreateUsersBulkProcess(ctx *context.Context) error {
 	return ctx.Html("admin_create_users.html")
 }
 
-// validateUserFields checks username, email, and password and returns an error message or empty string.
+// validateUserFields checks username, email, and password and returns the i18n key of the
+// error message, or an empty string if the fields are valid.
 func validateUserFields(username, email, password string) string {
 	if username == "" {
-		return "Username is required"
+		return "admin.create-users.error.username-required"
 	}
 	if len(username) > 24 {
-		return "Username must be 24 characters or less"
+		return "admin.create-users.error.username-too-long"
 	}
 	if !usernameRe.MatchString(username) {
-		return "Username must contain only alphanumeric characters and dashes"
+		return "admin.create-users.error.username-invalid"
 	}
 	if reservedNameValidator.Var(username, "notreserved") != nil {
-		return "Username is reserved"
+		return "admin.create-users.error.username-reserved"
 	}
 	if password == "" {
-		return "Password is required"
+		return "admin.create-users.error.password-required"
 	}
 	if len(password) < 6 {
-		return "Password must be at least 6 characters"
+		return "admin.create-users.error.password-too-short"
 	}
 	if email != "" {
 		if !emailRe.MatchString(email) {
-			return "Invalid email format"
+			return "admin.create-users.error.email-invalid"
 		}
 	}
 	return ""
