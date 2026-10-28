@@ -283,6 +283,24 @@ func GetFileContent(user string, gist string, revision string, filename string, 
 	return content, truncated, nil
 }
 
+// ResolveRevision returns the full commit hash that a revision (short hash, branch,
+// tag...) points to, or a RevisionNotFoundError if it does not exist.
+func ResolveRevision(user string, gist string, revision string) (string, error) {
+	if revision == "" || strings.HasPrefix(revision, "-") {
+		return "", &RevisionNotFoundError{}
+	}
+
+	cmd := exec.Command("git", "rev-parse", "--verify", "--quiet", revision+"^{commit}")
+	cmd.Dir = RepositoryPath(user, gist)
+
+	stdout, err := cmd.Output()
+	if err != nil {
+		return "", &RevisionNotFoundError{}
+	}
+
+	return strings.TrimSpace(string(stdout)), nil
+}
+
 func GetFileSize(user string, gist string, revision string, filename string) (uint64, error) {
 	repositoryPath := RepositoryPath(user, gist)
 

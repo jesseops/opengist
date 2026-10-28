@@ -37,8 +37,14 @@ func GistIndex(ctx *context.Context) error {
 
 	renderedFiles := render.RenderFiles(files)
 
-	// Load comments for this gist, scoped to revision if applicable
-	comments, err := db.GetCommentsByGist(gist.ID, revision)
+	// Load comments for this gist, scoped to the full revision hash if applicable
+	commentRevision := revision
+	if revision != "HEAD" {
+		if commentRevision, err = git.ResolveRevision(gist.User.Username, gist.Uuid, revision); err != nil {
+			return ctx.NotFound("Revision not found")
+		}
+	}
+	comments, err := db.GetCommentsByGist(gist.ID, commentRevision)
 	if err != nil {
 		return ctx.ErrorRes(500, "Error fetching comments", err)
 	}

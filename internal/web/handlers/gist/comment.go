@@ -1,16 +1,14 @@
 package gist
 
 import (
-	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/thomiceli/opengist/internal/db"
+	"github.com/thomiceli/opengist/internal/git"
 	"github.com/thomiceli/opengist/internal/render"
 	"github.com/thomiceli/opengist/internal/web/context"
 )
-
-var validRevisionRe = regexp.MustCompile(`^[0-9a-f]{1,40}$`)
 
 func CreateComment(ctx *context.Context) error {
 	gist := ctx.GetData("gist").(*db.Gist)
@@ -24,17 +22,23 @@ func CreateComment(ctx *context.Context) error {
 
 	content := ctx.FormValue("content")
 	if content == "" {
-		ctx.AddFlash("Comment cannot be empty", "error")
+		ctx.AddFlash(ctx.Tr("flash.gist.comment-empty"), "error")
 		return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier())
 	}
 
+	// Comments on a specific revision are stored under its full commit hash, so they
+	// show up whichever way the revision was referenced (short hash, tag, branch...).
 	revision := ctx.FormValue("revision")
 	if revision == "HEAD" {
 		revision = ""
 	}
-	// Validate revision is empty or a valid hex hash
-	if revision != "" && !validRevisionRe.MatchString(revision) {
-		revision = ""
+	if revision != "" {
+		resolved, err := git.ResolveRevision(gist.User.Username, gist.Uuid, revision)
+		if err != nil {
+			ctx.AddFlash(ctx.Tr("flash.gist.comment-invalid-revision"), "error")
+			return ctx.RedirectTo("/" + gist.User.Username + "/" + gist.Identifier())
+		}
+		revision = resolved
 	}
 
 	comment := &db.Comment{
